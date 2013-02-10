@@ -1,0 +1,24 @@
+#!/bin/sh
+
+#
+# Backup script by Brad Conte for backing up a personal resource.
+# This backs up: <PURPOSE>
+#
+
+# ==============================================================================
+# Setup
+# ==============================================================================
+
+# Execute global functionality and import global function resources.
+BACKUP_GROUP=""
+
+cd "`dirname "$0"`"
+source ../config/global.functions
+
+
+# ==============================================================================
+# Main Program
+# (Save relevant stuff to pwd)
+# ==============================================================================
+
+

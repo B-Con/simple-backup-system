@@ -1,0 +1,45 @@
+#!/bin/sh
+
+#
+# This helper code assumes the script has already set the proper CWD.
+#
+
+# ==============================================================================
+# Common functionality convenient for the various backup profile scripts.
+# ==============================================================================
+
+cleanse_backup() {
+	# Cleanse the backup location and cd to it.
+	rm -rf "$BACKUP_DIR" 2> /dev/null
+	mkdir -p "$BACKUP_DIR"
+	cd "$BACKUP_DIR" || exit 1
+}
+
+
+# ==============================================================================
+# Global functionality needed by the various backup profile scripts.
+# ==============================================================================
+
+# All backups need to be done as root.
+if [ ${EUID} -ne 0 ]; then
+	echo "Error: You must run backup scripts as root" >&2
+	exit 1
+fi
+
+# Get basic info about the script.
+SCRIPT_NAME="`basename "$0"`"
+SCRIPT_PATH="`dirname "$0"`"
+
+#
+# Include the global config and the individual config.
+# Requires "$BACKUP_GROUP" already be set.
+#
+source ../config/global.config
+[ -f "../config/${SCRIPT_NAME}.config" ] && source "../config/${SCRIPT_NAME}.config"
+
+# The directory the script will output to.
+BACKUP_DIR="${BACKUP_ROOT_DIR}/${BACKUP_GROUP}/${SCRIPT_NAME}/current"
+
+# For now assume all profiles want this done.
+# Not a good long-term assumption, but I don't have anything yet that doesn't.
+cleanse_backup

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#
+# Backup script by Brad Conte for backing up a personal resource.
+# This backs up: Nothing, it is a test script.
+#
+
+# ==============================================================================
+# Setup
+# ==============================================================================
+
+# Set the necessary variables that the globals will use.
+BACKUP_GROUP="brad-desktop"
+
+# Execute global functionality and import global function resources.
+source ../config/global.functions
+
+
+# ==============================================================================
+# Main Program
+# (Save relevant stuff to pwd)
+# ==============================================================================
+
+# This script does nothing.
+# Has side-effect of giving us a timestamp from the last time the test script
+# was executed.
+echo "Test backup contents." > "$BACKUP_DIR/test-file"
+cat "$BACKUP_DIR/test-file"

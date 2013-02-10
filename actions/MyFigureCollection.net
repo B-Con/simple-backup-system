@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Use cookie to get:
+#http://myfigurecollection.net/csv.php?mode=collection

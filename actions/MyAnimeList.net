@@ -1,0 +1,48 @@
+#!/bin/sh
+
+#
+# Backup script by Brad Conte for backing up a personal resource.
+# This backs up: My Profile on MyAnimeList.net
+#
+
+# ==============================================================================
+# Setup
+# ==============================================================================
+
+# Execute global functionality and import global function resources.
+BACKUP_GROUP="brad-internet"
+
+cd "`dirname "$0"`"
+source ../config/global.functions
+
+
+# ==============================================================================
+# Main Program
+# (Save relevant stuff to pwd)
+# ==============================================================================
+
+wget \
+	--recursive \
+	--page-requisites \
+	--html-extension \
+	--convert-links \
+	--restrict-file-names=unix \
+	--domains myanimelist.org \
+	--no-parent \
+	--no-directories \
+	http://myanimelist.net/animelist/B-Con
+
+mv B-Con.html B-Con-AnimeList.html
+
+wget \
+	--recursive \
+	--page-requisites \
+	--html-extension \
+	--convert-links \
+	--restrict-file-names=unix \
+	--domains myanimelist.org \
+	--no-parent \
+	--no-directories \
+	http://myanimelist.net/profile/B-Con
+
+mv B-Con.html B-Con-Profile.html

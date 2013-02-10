@@ -1,0 +1,14 @@
+
+
+# First send sigterm's to most important apps, because we don't know what state the computer is in.
+# 1) We don't know if a shutdown at this point would send sigterms to all apps.
+# 2) We don't know if we have enough time to shutdown properly.
+
+# Send sigterm to all vi(m), because that causes their .swp file to be written and then a clean exit.
+
+# Send sigterm to all Firefox
+
+# Leave a message indicating that the machine was shutdown for power outage reasons.
+sudo -u b-con loginmsg --add "Machine shut down due to power out signal." > /dev/null
+
+# Shutdown.

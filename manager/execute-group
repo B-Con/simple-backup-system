@@ -1,0 +1,61 @@
+#!/bin/sh
+
+#
+# This script executes a group of backup scripts. Expects 1 argument specifying
+# the group *name*.
+#
+
+# ==============================================================================
+# Constants
+# ==============================================================================
+
+# Where the backup scripts are located. Right now they live beside the master
+# script.
+GROUP_LIST_PATH="`dirname "$0"`"
+ACTION_PATH="$1"
+
+# Hard coded for the moment. Don't need much flexibility.
+#LOG_FILE="../../logs/master-log"
+
+
+# ==============================================================================
+# Main program
+# ==============================================================================
+
+if [ $EUID -ne 0 ] ; then
+	echo "You must run this as root." >&2
+	exit 1
+fi
+
+if [ ! -d "${GROUP_LIST_PATH}/${ACTION_PATH}" ] ; then
+	echo "Invalid group specified" >&2
+	exit 1
+fi
+cd "${GROUP_LIST_PATH}/${ACTION_PATH}"
+
+# Get the list of backup profiles to execute.
+ACTION_LIST="`ls`"
+
+# Execute all the backup script profiles.
+# TODO: Add logging.
+for backup_script in $ACTION_LIST ; do
+	# This test follows the symlink.
+	if [ -x "$backup_script" ] ; then
+		echo "Executing backup action: $backup_script"
+
+		#echo "\n\n"                                        >> "$LOG_FILE"
+		#echo "=========================================\n" >> "$LOG_FILE"
+		#echo "Script: $backup_script"                      >> "$LOG_FILE"
+		#echo "=========================================\n" >> "$LOG_FILE"
+
+		# Don't execute via the symlink, execute the script directly.
+		SCRIPT_PATH="`readlink "./$backup_script"`"
+		"./$SCRIPT_PATH" >> "$LOG_FILE"
+
+		#if [ $# -eq 0 ] ; then
+		#	echo " - Success"
+		#else
+		#	echo " - Failure"
+		#fi
+	fi
+done
