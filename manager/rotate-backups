@@ -25,27 +25,6 @@ DEFAULT_NUM_BACKUPS=10   # For weekly backups, this is just over two months.
 # Function definitions
 # ==============================================================================
 
-# Args: 1 = folder to backup, 2 = number of backups to keep (optional).
-rotate_and_prune()
-{
-	local BASE_PATH="$1"
-	local PROJ_NAME="`basename "$1"`"
-
-	# todo: remove
-	echo Rotating: $1
-
-	if [ ! -d "$BASE_PATH" ]; then
-		echo "Error: Specified archive path $BASE_PATH is not a directory" >&2
-		return 1
-	fi
-	pushd "$BASE_PATH" > /dev/null
-
-	create_archive "$PROJ_NAME"
-	prune_backups "$PROJ_NAME" $2
-
-	popd > /dev/null
-}
-
 # Args: 1 = folder to backup.
 # Creates the archive, owns it, and makes it read-only.
 create_archive()
@@ -109,7 +88,7 @@ create_archive()
 prune_backups()
 {
 	local PROJ_NAME="$1"
-	local BACKUP_LIST="`ls -t | grep -e "^${PROJ_NAME}"`"
+	local BACKUP_LIST="`ls -tr | grep -e "^${PROJ_NAME}"`"
 
 	# There may be nothing to prune.
 	if [ -z "$BACKUP_LIST" -o $(( $2 )) -eq $(( -1 )) ]; then
@@ -126,6 +105,26 @@ prune_backups()
 	fi
 }
 
+# Args: 1 = folder to backup, 2 = number of backups to keep (optional).
+rotate_and_prune()
+{
+	local BASE_PATH="$1"
+	local PROJ_NAME="`basename "$1"`"
+
+	# todo: remove
+	echo Rotating: $1
+
+	if [ ! -d "$BASE_PATH" ]; then
+		echo "Error: Specified archive path $BASE_PATH is not a directory" >&2
+		return 1
+	fi
+	pushd "$BASE_PATH" > /dev/null
+
+	create_archive "$PROJ_NAME"
+	prune_backups "$PROJ_NAME" $2
+
+	popd > /dev/null
+}
 
 # ==============================================================================
 # Main program

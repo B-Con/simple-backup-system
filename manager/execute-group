@@ -15,7 +15,7 @@ GROUP_LIST_PATH="`dirname "$0"`"
 ACTION_PATH="$1"
 
 # Hard coded for the moment. Don't need much flexibility.
-#LOG_FILE="../../logs/master-log"
+LOG_FILE="../logs/master-log"
 
 
 # ==============================================================================
@@ -27,6 +27,15 @@ if [ $EUID -ne 0 ] ; then
 	exit 1
 fi
 
+cd "`dirname "$0"`"
+
+# Set up logging
+#if [ ! -d "`dirname "$LOG_FILE"`" ] ; then
+#	mkdir "`dirname "$LOG_FILE"`"
+#fi
+#touch "$LOG_FILE"   # Create it or indicate we ran, so timestamp reflects last execute time.
+
+# Find the group path.
 if [ ! -d "${GROUP_LIST_PATH}/${ACTION_PATH}" ] ; then
 	echo "Invalid group specified" >&2
 	exit 1
@@ -39,8 +48,9 @@ ACTION_LIST="`ls`"
 # Execute all the backup script profiles.
 # TODO: Add logging.
 for backup_script in $ACTION_LIST ; do
-	# This test follows the symlink.
-	if [ -x "$backup_script" ] ; then
+	# Don't execute via the symlink, execute the script directly. It needs to know its path.
+	SCRIPT_PATH="`readlink "./$backup_script"`"
+	if [ -x "$SCRIPT_PATH" ] ; then
 		echo "Executing backup action: $backup_script"
 
 		#echo "\n\n"                                        >> "$LOG_FILE"
@@ -48,9 +58,7 @@ for backup_script in $ACTION_LIST ; do
 		#echo "Script: $backup_script"                      >> "$LOG_FILE"
 		#echo "=========================================\n" >> "$LOG_FILE"
 
-		# Don't execute via the symlink, execute the script directly.
-		SCRIPT_PATH="`readlink "./$backup_script"`"
-		"./$SCRIPT_PATH" >> "$LOG_FILE"
+		"./$SCRIPT_PATH" #>> "../$LOG_FILE"      # Account for the folder we stepped into.
 
 		#if [ $# -eq 0 ] ; then
 		#	echo " - Success"

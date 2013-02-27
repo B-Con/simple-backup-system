@@ -35,8 +35,8 @@ BU_LIST=(
 	"/var/abs/local/patches"
 	"/var/spool/cron"
 	)
-PATH_ROOT_FS="$BACKUP_DIR/root-fs"
-PATH_PACMAN="$BACKUP_DIR/pacman"
+PATH_ROOT_FS="./root-fs"
+PATH_PACMAN="./pacman"
 
 
 # ------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ chmod 755 "$PATH_ROOT_FS"
 for file in ${BU_LIST[@]} ; do
 	if [ -f "$file" -o -d "$file" ]; then
 		# Don't copy across mount points as a general rule.
-		# This is critical, as $HOME has a few mountpoints that should
+		# This is CRITICAL, as $HOME has a few mountpoints that should
 		# not be included.
 		cp -a --parents --one-file-system "$file" "$PATH_ROOT_FS/"
 	fi

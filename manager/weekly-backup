@@ -4,10 +4,10 @@
 # Perform the weekly backups.
 #
 
-SCRIPT_PATH="`dirname "$0"`"
+cd "`dirname "$0"`"
 
 # This performs all backups.
-"${SCRIPT_PATH}/execute-group" weekly
+./execute-group weekly
 
 # This rotates and prunes backup archives.
-"${SCRIPT_PATH}/rotate-backups"
+./rotate-backups

@@ -12,7 +12,6 @@ cleanse_backup() {
 	# Cleanse the backup location and cd to it.
 	rm -rf "$BACKUP_DIR" 2> /dev/null
 	mkdir -p "$BACKUP_DIR"
-	cd "$BACKUP_DIR" || exit 1
 }
 
 
@@ -37,9 +36,15 @@ SCRIPT_PATH="`dirname "$0"`"
 source ../config/global.config
 [ -f "../config/${SCRIPT_NAME}.config" ] && source "../config/${SCRIPT_NAME}.config"
 
-# The directory the script will output to.
+# Build directory the script will output to and verify the necessary filesystem structure exists.
+# Fail if the root back dir doesn't exist, but create the necessary subfolders if necessary.
+# TODO: Currently delete any pre-existing backup in this spot. It's possible this is not desireable
+# in all cases (such as an rsync that needs to be efficient), but for now nothing needs otherwise.
+# Todo is to make this togglable by a flag from the sourcing script/action.
+[ ! -d "$BACKUP_ROOT_DIR" ] && exit 1
 BACKUP_DIR="${BACKUP_ROOT_DIR}/${BACKUP_GROUP}/${SCRIPT_NAME}/current"
 
-# For now assume all profiles want this done.
-# Not a good long-term assumption, but I don't have anything yet that doesn't.
-cleanse_backup
+[ -d "$BACKUP_DIR" ] && rm -rf "$BACKUP_DIR" 2> /dev/null
+mkdir -p "$BACKUP_DIR"
+
+cd "$BACKUP_DIR" || exit 1
