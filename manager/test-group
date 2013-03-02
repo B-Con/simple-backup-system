@@ -1,0 +1,21 @@
+#!/bin/sh
+
+#
+# Backup manager script by Brad Conte for managing a set of test actions.
+#
+
+# ==============================================================================
+# Setup
+# ==============================================================================
+
+cd "`dirname "$0"`"
+source ../config/manager.functions
+
+
+# ==============================================================================
+# Main Program
+# (Save relevant stuff to pwd)
+# ==============================================================================
+
+execute_action test-action
+archive_action test_action 3

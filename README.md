@@ -83,3 +83,9 @@ Backup archives may or may not be created by action scripts.
 A action script that generates an archive outputs its latest backup into a folder called `action_name/current` which is then archived and rotated by the backup manager. The action's archives are all kept within `action_name/` and named based on the date they were archived.
 
 A backup archive not created by a action script will simply omits the `action_name/current` directory. This will cause it to be be ignored by the automated archiving and rotating process. Tt can store anything in and be untouched by automation. (For example, this might be something that is only updated rarely and only by hand.)
+
+
+TO-DO
+---
+* Add logging of success/failure/error for action scripts.
+* Add logging output of action scripts.

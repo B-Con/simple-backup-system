@@ -2,38 +2,47 @@
 
 # By: B-Con (Brad Conte: brad AT bradconte COM)
 #
-# This is a script to create backups from specified folders. The folder to be
-# rotated/archived should have the name structure:
-#     NAME/current
+# This is a library of functions for dealing with script actions in my backup
+# management system. The folder to be archived should have the name structure:
+# 	NAME/current
 # where "current" has the latest stuff to backup. Backups will be created with
 # the naming structure:
-#     NAME/NAME_YYYY-MM-DD_HH-MM-SS.tar.EXT
+# 	NAME/NAME_YYYY-MM-DD_HH-MM-SS.tar.EXT
+
+# Summary: There are two functions of primary interest:
+# 	execute_action() - finds the name of the script and executes it
+# 	archive_action() - archives & rotates the backup path of the action
+# Manager scripts call these for the actions they are handling.
+# 	Call them back-to-back for a traditional backup & archive scheme. Or execute
+# the backup script multiple times before archiving to only save periodic
+# snapshots.
 
 
 # ==============================================================================
 # Constants
 # ==============================================================================
 
-SCRIPT_PATH="`dirname "$0"`"
-cd "$SCRIPT_PATH"
+# We must already be in the script's directory.
 source "../config/global.config"
 
-DEFAULT_NUM_BACKUPS=10   # For weekly backups, this is just over two months.
+# For weekly backups, this is just over two months.
+DEFAULT_NUM_BACKUPS=10
 
 
 # ==============================================================================
 # Function definitions
 # ==============================================================================
 
-# Args: 1 = folder to backup.
-# Creates the archive, owns it, and makes it read-only.
+# Args:
+#	1 = folder to backup
+# Creates the archive and sets its ownership and permissions.
 create_archive()
 {
-	local PROJ_NAME="$1"
+	local ACTION_NAME="$1"
 	local BACKUP_SOURCE="current"
 
 	if [ ! -d "$BACKUP_SOURCE" -a ! -f "$BACKUP_SOURCE" ]; then
-		echo "Error: Backup path ${BACKUP_SOURCE} doesn't exist" >&2
+		echo "Error: The canonical backup path `pwd`/${BACKUP_SOURCE} doesn't exist" >&2
 		return 1
 	fi
 
@@ -42,8 +51,8 @@ create_archive()
 		return 0
 	fi
 
-	local LATEST_BACKUP_FILE="`ls -t | grep -e "^${PROJ_NAME}" | head -n 1`"
-	local NEW_BACKUP_SOURCE="${PROJ_NAME}_`date +%Y-%m-%d_%H-%M-%S`"
+	local LATEST_BACKUP_FILE="`ls -t | grep -e "^${ACTION_NAME}" | head -n 1`"
+	local NEW_BACKUP_SOURCE="${ACTION_NAME}_`date +%Y-%m-%d_%H-%M-%S`"
 	local NEW_BACKUP_FILE="${NEW_BACKUP_SOURCE}.tar.gz"
 
 	# Rename the to-archive folder to the base name of the archive file. This
@@ -55,13 +64,13 @@ create_archive()
 	local SUCCESS=$?
 	mv "$NEW_BACKUP_SOURCE" "$BACKUP_SOURCE"
 	if [ $SUCCESS -ne 0 ]; then
-		echo "Error: Could not create archive $NEW_BACKUP_FILE" 2>&1
+		echo "Error: Failed to create archive $NEW_BACKUP_FILE" 2>&1
 		return 1
 	fi
 
 	# Make the backups read-only and owned by root. This is safest.
-	chmod 444 "$NEW_BACKUP_FILE"
 	chown root:root "$NEW_BACKUP_FILE"
+	chmod 444 "$NEW_BACKUP_FILE"
 
 	# Note: Don't remove the "current" contents. The backups may use optimized
 	# syncing that only updates modified files. Removing it would eliminate
@@ -83,14 +92,15 @@ create_archive()
 	fi
 }
 
-# Args: 1st = prepend-name for archives, 2nd = number of archives to keep, if 2nd is
-# not set or is 0 then use the default number, if it's -1 then don't prune.
-prune_backups()
+# Args:
+#	1st = prepend-name for archives
+#	2nd = number of archives to keep; if not set or 0 then use the default, if -1 then don't prune
+rotate_backups()
 {
-	local PROJ_NAME="$1"
-	local BACKUP_LIST="`ls -tr | grep -e "^${PROJ_NAME}"`"
+	local ACTION_NAME="$1"
+	local BACKUP_LIST="`ls -tr | grep -e "^${ACTION_NAME}"`"   # Reverse it.
 
-	# There may be nothing to prune.
+	# See if there's no pruning to be done.
 	if [ -z "$BACKUP_LIST" -o $(( $2 )) -eq $(( -1 )) ]; then
 		return 0
 	fi
@@ -100,58 +110,48 @@ prune_backups()
 
 	# Prune archives that aren't recent enough.
 	if [ $(( `echo "$BACKUP_LIST" | wc -l` )) -gt $NUM_BACKUPS ]; then
-		# Use -f since archives/backups may be read-only.
 		echo "$BACKUP_LIST" | head -n -$NUM_BACKUPS | xargs rm -f
 	fi
 }
 
-# Args: 1 = folder to backup, 2 = number of backups to keep (optional).
-rotate_and_prune()
+# Args:
+#	1 = action *name* to execute
+execute_action()
 {
-	local BASE_PATH="$1"
-	local PROJ_NAME="`basename "$1"`"
+	ACTION_SCRIPT="$1"
 
-	# todo: remove
-	echo Rotating: $1
+	# cd to the folder with the action scripts.
+	cd "`dirname "$0"`\..\actions"
 
-	if [ ! -d "$BASE_PATH" ]; then
-		echo "Error: Specified archive path $BASE_PATH is not a directory" >&2
+	if [ ! -x "$ACTION_SCRIPT" ]; do
+		echo "Error: Can't execute the specified script" >&2
 		return 1
 	fi
-	pushd "$BASE_PATH" > /dev/null
 
-	create_archive "$PROJ_NAME"
-	prune_backups "$PROJ_NAME" $2
+	"./$ACTION_SCRIPT"
+}
+
+# Args:
+#	1 = action *name* to backup
+#	2 = number of backups to keep (optional)
+archive_action()
+{
+	local ACTION_PATH="$1"
+
+	if [ ! -d "$BACKUP_ROOT_DIR" ]; then
+		echo "Error: Backup root dir doesn't exist." >&2
+		return 1
+	fi
+	cd "$BACKUP_ROOT_DIR"
+
+	if [ ! -d "$ACTION_PATH" ]; then
+		echo "Error: Specified action $ACTION_PATH does not have a backup" >&2
+		return 1
+	fi
+	cd "$ACTION_PATH"
+
+	create_archive "$ACTION_PATH"
+	rotate_backups "$ACTION_PATH" $2
 
 	popd > /dev/null
 }
-
-# ==============================================================================
-# Main program
-# ==============================================================================
-
-if [ "$EUID" != "0" ]; then
-	echo "Must run backup as root." >&2
-	exit 1
-fi
-
-if [ ! -d "$BACKUP_ROOT_DIR" ]; then
-	echo "Specified backup root path $BACKUP_ROOT_DIR is not a directory." >&2
-	exit 1
-fi
-cd "$BACKUP_ROOT_DIR" || exit 1
-
-# For simple testing.
-#rotate_and_prune "brad-internet/MyAnimeList.net"
-#rotate_and_prune "brad-desktop/test-script"
-
-# TODO: Just auto-prune everything equally?
-# All backup profiles are within a higher-level organizational folder, so
-# they are 2 layers deep from the root backup folder. Folders with the folder
-# "current" are assumed to be participating in this automated system. (Note
-# that NOT all folders are participating.) Prune those.
-for next_backup_dir in `find . -maxdepth 2 -mindepth 2 -type d`; do
-	if [ -d "${next_backup_dir}/current" ]; then
-		rotate_and_prune "$next_backup_dir"
-	fi
-done
