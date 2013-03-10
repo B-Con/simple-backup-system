@@ -17,5 +17,13 @@ source ../config/manager.functions
 # (Save relevant stuff to pwd)
 # ==============================================================================
 
+# Include this dummy backup as a sanity test so that we can tell after the fact
+# if the basics were working.
 execute_action test-action
-archive_action test_action 3
+archive_action test-action
+
+execute_action MyAnimeList.net
+archive_action MyAnimeList.net
+
+execute_action arch-linux-config
+archive_action arch-linux-config

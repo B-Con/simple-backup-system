@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# 
+# A simple script to install this project onto my system.
+#
+
+INSTALL_PATH="/usr/local/bin/backup"
+
+# Preserve existing file permissions...
+cp -vr actions/ "$INSTALL_PATH"
+cp -vr config/ "$INSTALL_PATH"
+cp -vr manager/ "$INSTALL_PATH"
+
+# ...but not owners.
+chown -R root:root "$INSTALL_PATH"
+

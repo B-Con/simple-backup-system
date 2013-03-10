@@ -9,16 +9,13 @@
 # Setup
 # ==============================================================================
 
-# Execute global functionality and import global function resources.
-BACKUP_GROUP="brad-desktop"
-
 cd "`dirname "$0"`"
 source ../config/global.functions
 
 
 # ==============================================================================
 # Main Program
-# (Save relevant stuff to pwd)
+# (Save relevant stuff to cwd)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------

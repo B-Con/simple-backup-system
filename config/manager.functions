@@ -33,9 +33,10 @@ DEFAULT_NUM_BACKUPS=10
 # Function definitions
 # ==============================================================================
 
+# Creates the archive and sets its ownership and permissions.
+# Assumes CWD is the action's backup path.
 # Args:
 #	1 = folder to backup
-# Creates the archive and sets its ownership and permissions.
 create_archive()
 {
 	local ACTION_NAME="$1"
@@ -92,28 +93,34 @@ create_archive()
 	fi
 }
 
+# Rotates/prunes the backups for the
+# Assumes CWD is the action's backup path.
 # Args:
 #	1st = prepend-name for archives
 #	2nd = number of archives to keep; if not set or 0 then use the default, if -1 then don't prune
 rotate_backups()
 {
 	local ACTION_NAME="$1"
-	local BACKUP_LIST="`ls -tr | grep -e "^${ACTION_NAME}"`"   # Reverse it.
+	local BACKUP_LIST="`ls -tr | grep -e "^${ACTION_NAME}"`"   # Reverse the list.
 
 	# See if there's no pruning to be done.
 	if [ -z "$BACKUP_LIST" -o $(( $2 )) -eq $(( -1 )) ]; then
 		return 0
 	fi
 
-	local NUM_BACKUPS=$DEFAULT_NUM_BACKUPS
-	[ $(( $2 )) -gt 0 ] && NUM_BACKUPS=$2
+	if [ $(( $2 )) -ne -1 ]; then
+		local NUM_BACKUPS=$DEFAULT_NUM_BACKUPS
+		[ $(( $2 )) -gt 0 ] && NUM_BACKUPS=$2
 
-	# Prune archives that aren't recent enough.
-	if [ $(( `echo "$BACKUP_LIST" | wc -l` )) -gt $NUM_BACKUPS ]; then
-		echo "$BACKUP_LIST" | head -n -$NUM_BACKUPS | xargs rm -f
+		# Prune archives that aren't recent enough.
+		# List is sorted oldest to newest. Grap all but the X most recent.
+		if [ $(( `echo "$BACKUP_LIST" | wc -l` )) -gt $NUM_BACKUPS ]; then
+			echo "$BACKUP_LIST" | head -n -$NUM_BACKUPS | xargs rm -f
+		fi
 	fi
 }
 
+# Executes the action script with the given name.
 # Args:
 #	1 = action *name* to execute
 execute_action()
@@ -121,37 +128,55 @@ execute_action()
 	ACTION_SCRIPT="$1"
 
 	# cd to the folder with the action scripts.
-	cd "`dirname "$0"`\..\actions"
+	pushd "`dirname "$0"`/../actions" > /dev/null
 
-	if [ ! -x "$ACTION_SCRIPT" ]; do
+	if [ ! -x "$ACTION_SCRIPT" ]; then
 		echo "Error: Can't execute the specified script" >&2
 		return 1
 	fi
 
 	"./$ACTION_SCRIPT"
+
+	popd > /dev/null
 }
 
+# Archives the given action if it has a presense in the master backup location.
 # Args:
 #	1 = action *name* to backup
 #	2 = number of backups to keep (optional)
 archive_action()
 {
-	local ACTION_PATH="$1"
+	local ACTION_NAME="$1"
 
 	if [ ! -d "$BACKUP_ROOT_DIR" ]; then
 		echo "Error: Backup root dir doesn't exist." >&2
 		return 1
 	fi
-	cd "$BACKUP_ROOT_DIR"
+	pushd "$BACKUP_ROOT_DIR" > /dev/null
 
-	if [ ! -d "$ACTION_PATH" ]; then
-		echo "Error: Specified action $ACTION_PATH does not have a backup" >&2
+	if [ ! -d "$ACTION_NAME" ]; then
+		echo "Warning: Specified action $ACTION_PATH does not have a backup directory" >&2
+		echo "         Creating directory"
+		mkdir "$ACTION_NAME"
+		chown b-con:data-storage "$ACTION_NAME"
+		chmod 775 "$ACTION_NAME"
 		return 1
 	fi
-	cd "$ACTION_PATH"
+	pushd "$ACTION_NAME" > /dev/null
 
-	create_archive "$ACTION_PATH"
-	rotate_backups "$ACTION_PATH" $2
+	create_archive "$ACTION_NAME"
+	rotate_backups "$ACTION_NAME" $2
 
 	popd > /dev/null
+	popd > /dev/null
 }
+
+
+# ==============================================================================
+# General code to execute
+# ==============================================================================
+
+if [ $EUID -ne 0 ]; then
+	echo "You need to run these scripts as root" >&2
+	exit 1
+fi
