@@ -1,0 +1,64 @@
+#!/bin/sh
+
+#
+# Backup script by Brad Conte for backing up a personal resource.
+# This backs up: <PURPOSE>
+#
+
+# ==============================================================================
+# Setup
+# ==============================================================================
+
+cd "`dirname "$0"`"
+
+# rsync path, trailing slash matters.
+BACKUP_SRC_FS="/media/storage/"
+
+BACKUP_DEST_DEV="/dev/disk/by-label/storage-backup"
+
+# Minimum filesystem usage of source to back it up. Don't want to back
+# up a nearly empty filesystem, as that would probably be an error.
+MIN_SRC_PCT_USED=100   # In GB
+
+# Preserve permissions, ownerships, timestamps, delete non-existant source files,
+# recursive, keep symlinks and special files.
+RSYNC_PARAMS="--archive --delete -v"
+
+
+# ==============================================================================
+# Main Program
+# (Save relevant stuff to cwd)
+# ==============================================================================
+
+if [ $EUID -ne 0 ]; then
+	echo "Error: You must be root to run this script." >&2
+	exit 1
+fi
+
+mountpoint -q $BACKUP_SRC_FS || exit 1
+
+BACKUP_DEST_FS=$(mktemp --directory /media/storage-backup-XXXXXX)
+if [ ! -d $BACKUP_DEST_FS ]; then
+	echo "Error: Could not create temporary mount directory." >&2
+	exit 1
+fi
+
+mount $BACKUP_DEST_DEV $BACKUP_DEST_FS
+if [ $? -ne 0 ]; then
+	echo "Error: Could not mount destination backup filesystem." >&2
+	rmdir $BACKUP_DEST_FS
+	exit 1
+fi
+
+SRC_PCT_USED=$(df -BG $BACKUP_SRC_FS | tail -n 1 | awk '{print $3}' | cut -d'G' -f1)
+if [ $SRC_PCT_USED -ge $MIN_SRC_PCT_USED ]; then
+	echo "$RSYNC_PARAMS $BACKUP_SRC $BACKUP_DEST_FS"
+	rsync $RSYNC_PARAMS $BACKUP_SRC_FS $BACKUP_DEST_FS
+else
+	echo "Warning: Skipping backup due to source being too small." >&2
+fi
+
+sync
+umount $BACKUP_DEST_FS
+rmdir $BACKUP_DEST_FS
+

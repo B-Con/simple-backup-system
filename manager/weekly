@@ -27,3 +27,6 @@ archive_action MyAnimeList.net
 
 execute_action arch-linux-config
 archive_action arch-linux-config
+
+execute_action storage-backup
+
