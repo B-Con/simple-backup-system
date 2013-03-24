@@ -9,8 +9,6 @@
 # Setup
 # ==============================================================================
 
-cd "`dirname "$0"`"
-
 # rsync path, trailing slash matters.
 BACKUP_SRC_FS="/media/storage/"
 
