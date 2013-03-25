@@ -1,14 +1,55 @@
+#!/bin/sh
+
+#
+# Backup script by Brad Conte for backing up a personal resource.
+# This backs up: <PURPOSE>
+#
+
+# ==============================================================================
+# Setup
+# ==============================================================================
+
+cd "`dirname "$0"`"
+source ../config/global.functions
 
 
-# First send sigterm's to most important apps, because we don't know what state the computer is in.
-# 1) We don't know if a shutdown at this point would send sigterms to all apps.
-# 2) We don't know if we have enough time to shutdown properly.
+# ==============================================================================
+# Main Program
+# (Save relevant stuff to cwd)
+# ==============================================================================
+
+# A lot of this stuff is *already* done by a normal system shutdown. However,
+# we do it here explicitly because We will be pausing to wait for user input 
+# regarding whether we should power off or not. We're gambling we don't wait 
+# too long and exhaust the UPS. So do the important backup now.
+
+#
+# First end most important apps.
+#
 
 # Send sigterm to all vi(m), because that causes their .swp file to be written and then a clean exit.
+killall -s SIGTERM vi
+killall -s SIGTERM vim
 
-# Send sigterm to all Firefox
+killall -s SIGTERM firefox
+
+#
+# Misc.
+#
+
+sync
+
+#
+# Shutdown.
+#
+
+
 
 # Leave a message indicating that the machine was shutdown for power outage reasons.
 sudo -u b-con loginmsg --add "Machine shut down due to power out signal." > /dev/null
 
-# Shutdown.
+# TODO: Send me a text and then get a reply about whether to abort shutdown.
+#
+
+#poweroff
+
